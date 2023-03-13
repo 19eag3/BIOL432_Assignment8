@@ -1,0 +1,99 @@
+---
+title: "A8"
+author: "Elliot Gavrin"
+date: "2023-03-08"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+[https://github.com/19eag3/BIOL432_Assignment8](https://github.com/19eag3/BIOL432_Assignment8)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Libraries
+```{r}
+library(ape)
+library(ggplot2)
+library(vegan)
+library(dplyr)
+library(BiocManager)
+library(ggtree)
+```
+Exploring Dataset
+```{r}
+Samples<-read.csv("C:/Users/egavr/OneDrive/Documents/BIOL432/Csv files/FloristicSurvey.csv")
+dim(Samples)
+head(Samples)
+tail(Samples)
+str(Samples)
+summary(Samples)
+```
+Converting Factors into Binary Data
+```{r}
+InDat <-Samples %>%
+  select(-c(Quadrate,Location))
+InDat2 <-Samples %>%
+  select(-c(Quadrate))
+BinDat2 <-InDat2
+BinDat <-InDat
+for(row in 1:nrow(InDat)){
+  for(col in 1:ncol(InDat)){
+    if (BinDat[row,col] > 0){
+      BinDat[row,col]<-1
+    }
+  }
+}
+str(BinDat)
+```
+ 
+Q1 - Categorizing by Dissimularity - Highlighting the samples that are taken in and out of mustard plant patches
+```{r}
+OTU_dist<- vegdist(BinDat, method="bray",binary=F)
+OTUtree<-nj(OTU_dist)
+NMDSdat<-metaMDS(OTU_dist,k=2)
+ggtree(OTUtree,layout="rectangular") %<+% BinDat2 +
+  geom_tiplab(aes(colour=Location))+
+  theme(legend.position = "right")
+```
+Fig. 1: Dissimilarity tree depicting the relationship between each sample. Red samples are samples that are taken from quadrents within mustard plant patches. Grey samples are taken from quadrents outside of mustard plant samples
+
+There is influence in plant samples from areas where mustard plants are present. The OUT tree determined the samples that are in the same patches as mustard plants to be the most similar to each other, while plants outside of the mustard patches are not as similar to those within. 
+
+Q2
+```{r}
+Pdat<-data.frame(NMDS1=NMDSdat$points[,1],
+                 NMDS2=NMDSdat$points[,2],
+                 SampleID=row.names(Samples))
+Pdat<-merge(Pdat,Samples,all.x=T,all.y=F)
+str(Pdat)
+Pdat$fLocation <- factor(Pdat$Location)
+ggplot(aes(x=NMDS1,y=NMDS2,color=fLocation, alpha=I(0.6)), data=Pdat)+
+  geom_point()+
+  geom_jitter()+
+  scale_colour_gradient(limits = c(0,14))+
+  theme_classic()+
+  scale_color_manual(values = c("red", "green"))
+```
+Fig. 2: Plot of NMDS2 vs NMDS1. Red dots are where the samples in the prescence of mustard. Green dots are where samples were recorded outside the presence of mustard.
+
+```{r}
+ggplot(aes(x=NMDS1,y=NMDS2,colour=Population), data=Pdat)+
+  geom_point()+
+  geom_jitter()+
+  theme_classic()
+```
+
+Fig. 3: Plot of NMDS vs NMDS1. Darker dots represent a lower population of mustard in the area that the sample was taken from. Lighter dots respresnt a higher population of mustard in the area that the sample was taken frmo. 
+
+The figures support that the populaiton has a stronger impact on plant communities, because they are grouped together more tightly when categorized by population than by presence of mustard. 
+
+
+
+
+
+
+
+
